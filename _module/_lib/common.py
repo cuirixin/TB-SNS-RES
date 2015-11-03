@@ -7,7 +7,6 @@ from calendar import monthrange
 from _module import const
 from _module._lib.des import DES
 from _module._lib.smtpemail import SmtpEmail
-from _module.thirdpay.wzhifuSDK import HttpClient
 import xml.etree.ElementTree as ET
 import base64
 import config_base
@@ -480,10 +479,6 @@ class Common:
             return "%.2f M" % (bytes/1024.0/1024.0)
         
     
-    @staticmethod
-    def sendPostBodyRequst(url, text_body, second=30):
-        """以post方式提交xml到对应的接口url"""
-        return HttpClient().postXml(text_body, url, second=second)
     
     #### 请求相关
     @staticmethod

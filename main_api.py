@@ -13,22 +13,11 @@ import config_base
 import sys
 import tornado
 
-urls = [
-
-    (r'/app/user/download/([0-9a-z-A-Z.]*)[/]?', 'api.index.UserAppDownH'),
-    (r"/uploads/image_ugc/(.*).jpg", 'api.image.ImageUGCRedirectH'),
-    (r"/uploads/images_ugc/(.*)", StaticFileHandler, {"path": config_base.setting['upload_image_ugc']}),
-    (r"/uploads/image/(.*).jpg", 'api.image.ImageRedirectH'),
-    (r"/uploads/images/(.*)", StaticFileHandler, {"path": config_base.setting['upload_image']}),
-    
-    #(r"/uploads/discover/(.*)", StaticFileHandler, {"path": config_base.setting['upload_discover']}),
-    #(r"/uploads/print/(.*)", StaticFileHandler, {"path": config_base.setting['upload_print']}),
+urls = [    
     (r"/uploads/avator/(.*)", StaticFileHandler, {"path": config_base.setting['upload_avator']}),
-    #(r"/uploads/temp/(.*)", StaticFileHandler, {"path": config_base.setting['upload_temp']}),
-    
+   
     # 上传API
     (r"/image/upload/common", 'api.image.UploadCommonH'),
-    (r"/image/upload/ugc", 'api.image.UploadUGCH'),
     (r"/image/upload/avator", 'api.image.UploadAvatorH'),
     ('.*', 'api.image.PageNotFoundH'),
     

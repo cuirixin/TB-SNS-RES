@@ -15,10 +15,21 @@ class ImageModel(BaseModel):
         self._tmp_image_table = 'image_tmp'
         self._image_id_generator = 'image_id_generator'
         self._image_ugc_id_generator = 'image_ugc_id_generator'
+        self._image_avator = 'image_avator'
+
+    def get_avator_id(self, uid):
+        sql = "SELECT id FROM %s WHERE uid='%s'" % (self._image_avator, uid)
+        one = self.get_one(sql)
+        if one:
+            return str(one['id'])
+        sql = "INSERT INTO %s(`uid`) VALUES('%s')" % (self._image_avator, uid)
+        id = self.execute(sql)[1]
+        dir_index = int(id / 10000) + 1
+        dir_path = config_base.setting['upload_avator'] + str(dir_index)
+        if not os.path.isdir(dir_path):
+            os.makedirs(dir_path, 0777)
+        return str(id)
         
-        self._image_table = 'b_image'
-        self._image_ugc_table = 'b_image_ugc'
-        self._uid = uid
         
     def gen_id(self):
         sql = "INSERT INTO %s(`add_time`) VALUES(%d)" % (self._image_id_generator, Common.get_current_time())
@@ -37,26 +48,6 @@ class ImageModel(BaseModel):
         if not os.path.isdir(dir_path):
             os.makedirs(dir_path, 0777)
         return str(id)
-         
 
-    def add_tmp(self, uuid):
-        sql = "INSERT INTO %s(`uuid`,`add_time`) VALUES('%s', %d)" \
-                % (self._tmp_image_table, uuid, Common.get_current_time())
-        return self.execute(sql)
-    
-    def del_tmp(self, uuid):
-        sql = "DELETE FROM %s WHERE uuid='%s' " \
-                % (self._tmp_image_table, uuid)
-        return self.execute(sql)
-    
-    def delete_business_image(self, uuid):
-        sql = "UPDATE %s SET status=%d WHERE uuid='%s' " \
-                % (self._image_table, const.Image.STATUS_DELETE, uuid)
-        return self.execute(sql)[0]
-
-    def delete_business_ugc_image(self, uuid):
-        sql = "UPDATE %s SET status=%d WHERE uuid='%s' " \
-                % (self._image_ugc_table, const.Image.STATUS_DELETE, uuid)
-        return self.execute(sql)[0]
         
     

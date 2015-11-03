@@ -9,11 +9,12 @@ from _module import msg
 from _module._lib.log import Log
 from _module._lib.session import Session
 from tornado import locale
-from tornado.web import RequestHandler, HTTPError
+from tornado.web import RequestHandler
 import config_base
-import hashlib
 import functools
+import hashlib
 import json
+import pprint
 import tornado.escape
 """
 API Base Controller Module.
@@ -21,21 +22,6 @@ API Base Controller Module.
 Authors: cuirixin(rixin.cui@tubban.com)
 Date:    2014/10/15
 """
-
-def auth_app_outer(method):
-    """auth key verification decorator for special outer request.
-    """
-    @functools.wraps(method)
-    def wrapper(self, *args, **kwargs):
-        if isinstance(self, RequestHandler):
-            if self.auth_auth_key('61oETzKXQAGaYdkL5gEmGeJJFuYh7EQnp2XdTP1olVor') == False:
-                self.set_code(msg.API_Code.SYS_TOKEN_ERROR)
-                self.set_message(msg.API_Desc.SYS_TOKEN_ERROR)
-                self.display()
-                self.finish()
-                return
-        return method(self, *args, **kwargs)
-    return wrapper
 
 def auth_app(method):
     """auth key verification decorator for common request.
@@ -85,6 +71,8 @@ class BaseHandler(RequestHandler):
         self._ret = {'SESSIONID':tornado.escape.url_escape(self._session.get_sessionid()),
                      'code':msg.API_Code.SYS_OK, 'message' : msg.API_Desc.SYS_OK, 'data' : None} 
         self._validate = dict(valid= 'false', message='Post argument missing.')
+        # 版本信息
+        self._version = self.get_argument('_vs_', '1')
 
     def get_user_locale(self):
         """Return current request locale 
@@ -116,7 +104,7 @@ class BaseHandler(RequestHandler):
         user = self.get_current_user()
         if not user:
             return None
-        return user['id']
+        return user['_id']
 
     def get_num(self, param, default = 0):
         """Return integer param from the request 
@@ -139,6 +127,9 @@ class BaseHandler(RequestHandler):
         try:
             in_vals = json.loads(in_vals)
         except Exception,e:
+            return [False, "JSON Format Error."]
+        
+        if not isinstance(in_vals, dict):
             return [False, "JSON Format Error."]
         
         values = {}
@@ -175,6 +166,30 @@ class BaseHandler(RequestHandler):
                         val = float(in_vals[k])
                     except Exception as e:
                         return [False, "key: %s's value is not a float" % k]
+                elif v['type'] == 'dict':
+                    try:
+                        if isinstance(in_vals[k], dict):
+                            val = in_vals[k]
+                        elif isinstance(in_vals[k], str):
+                            val = json.dumps(in_vals[k])
+                    except Exception as e:
+                        return [False, "key: %s's value is not a dict or dict json string" % k]
+                elif v['type'] == 'list':
+                    try:
+                        if isinstance(in_vals[k], list):
+                            val = in_vals[k]
+                        elif isinstance(in_vals[k], str):
+                            val = json.dumps(in_vals[k])
+                        else:
+                            raise Exception()
+
+                        if v.has_key('maxsize'):
+                            if len(val) > v['maxsize']:
+                                return [False, "key: %s's size is more than %d " % (k, v['maxsize'])]
+
+                    except Exception as e:
+                        return [False, "key: %s's value is not a list or list json string" % k]
+
                 else:
                     val = str(in_vals[k])
                     length = len(val)
@@ -192,6 +207,7 @@ class BaseHandler(RequestHandler):
                         if not val in v['in']:
                             return [False, "key: %s's value must be in array %s " % (k, str(v['in']))]
             values[k] = val;
+            
         return [True, values]
 
     def display(self):
@@ -206,6 +222,7 @@ class BaseHandler(RequestHandler):
                         self._ret['data'] = []
                 except:
                     pass
+            #print self._ret
             self.write(tornado.escape.json_encode(self._ret))
         except Exception as e:
             print e
@@ -219,9 +236,21 @@ class BaseHandler(RequestHandler):
         self.display()
         self.finish()
         
-    def display_internal_error(self, _msg = msg.API_Desc.SYS_INTERNAL_ERROR):  
+    def display_internal_error(self):  
         self.set_code(msg.API_Code.SYS_INTERNAL_ERROR)
-        self.set_message(_msg)
+        self.set_message(msg.API_Desc.SYS_INTERNAL_ERROR)
+        self.display()
+        self.finish()
+
+    def display_code_error(self, code, msg="o(╯□╰)o"):
+        self.set_code(code)
+        self.set_message(msg)
+        self.display()
+        self.finish()
+
+    def display_access_expires(self):
+        self.set_code(msg.API_Code.SYS_ACCESS_EXPIRES)
+        self.set_message(msg.API_Desc.SYS_ACCESS_EXPIRES)
         self.display()
         self.finish()
         
@@ -265,11 +294,11 @@ class BaseHandler(RequestHandler):
             if auth_key <> key:
                 return False
         return True
-    
+
     # 取消cookir验证，接口部分必须加
     def check_xsrf_cookie(self):
         pass
-    
+
     def get_pager(self, p=1,ps=20, sf=None,st=None):
         _pager=dict()
         
@@ -306,21 +335,23 @@ class BaseHandler(RequestHandler):
         """
         pass
     
-    def get(self, *args, **kwargs):
-        try:
-            self._get(*args, **kwargs)
-        except HTTPError,e:
-            Log.error(e)
-            if e.status_code == 404:
-                #self.render('web/404.htm')
-                self.write("No resource")
-            elif e.status_code == 405:
-                #self.render('web/405.htm')
-                self.write("No resource")
-            else:
-                #self.render('web/500.htm')
-                self.write("Internal error")
-            return
-        except Exception,e:
-            Log.error(e)
-            self.write("Internal error")
+    """
+    def _set_login_user(self, user):
+        tmp = {
+            "id": user['id'],
+            "username": user['username'],
+            "group_id": user['group_id'],
+            "mobile": user['mobile'],
+            "creator": user['creator'],
+            "mobile_code": user['mobile_code'],
+            "email": user['email'],
+            "sex": user['sex'],
+            "icon": user['icon'],
+            "login_ip": self.request.remote_ip,
+            "_cache": user['_cache']
+        }
+        
+        self._session.set('user', tmp)
+        return tmp
+    """
+    
