@@ -15,6 +15,7 @@ import tornado
 
 urls = [    
     (r"/uploads/avator/(.*)", StaticFileHandler, {"path": config_base.setting['upload_avator']}),
+    (r"/uploads/image/(.*)", StaticFileHandler, {"path": config_base.setting['upload_image']}),
    
     # 上传API
     (r"/image/upload/common", 'api.image.UploadCommonH'),
