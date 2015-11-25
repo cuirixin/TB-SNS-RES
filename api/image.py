@@ -121,9 +121,9 @@ class UploadAvatorH(BaseHandler):
             
             # other size
             img = Image.open(uploadPath+filenameBig)
-            img.thumbnail((180,180),resample=1)
+            img.thumbnail((600,600),resample=1)
             img.save(uploadPath+filenameBig)
-            img.thumbnail((50,50),resample=1)
+            img.thumbnail((200,200),resample=1)
             img.save(uploadPath+filenameMid)
             
             tmp_file.close()
