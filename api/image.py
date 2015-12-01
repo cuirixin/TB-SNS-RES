@@ -36,8 +36,8 @@ class UploadCommonH(BaseHandler):
         
         file_dict_list = self.request.files['upload']
         
-        if len(file_dict_list)<0 or len(file_dict_list)>5:
-            self.display_para_error("Image num range： 1~5")
+        if len(file_dict_list)<0 or len(file_dict_list)>6:
+            self.display_para_error("Image num range： 1~6")
             return
         
         uuids = []
