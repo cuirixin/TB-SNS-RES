@@ -23,7 +23,7 @@ class UploadCommonH(BaseHandler):
         
         data = {
             'title': {'type':'s','default':''},
-            'watermark': {'type':'d','default':1},
+            'watermark': {'type':'d','default':0},
         }
         ret = self.pack_args(data)
         if not ret[0]:
